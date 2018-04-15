@@ -115,19 +115,13 @@ public class PlayerController : MonoBehaviour
 
     void UpdateAnims(float targateSpeed)
     {
-        if (Input.GetAxisRaw("Vertical") < 0.9f && m_spriteAnimIndex == 4)
+        if (Input.GetAxisRaw("Vertical") < 0.9f && (m_spriteAnimIndex == 4 || m_spriteAnimIndex == 5))
         {
             m_spriteAnimIndex = 5;
-
-            if (m_spriteAnimIndex != 5)
-                m_animTime = 0.0f;
         }
-        if (Input.GetAxisRaw("Vertical") > 0.9f && (targateSpeed > m_maxSpeed * 0.5f || targateSpeed < -m_maxSpeed * 0.5f))
+        else if (Input.GetAxisRaw("Vertical") > 0.9f && (targateSpeed > m_maxSpeed * 0.5f || targateSpeed < -m_maxSpeed * 0.5f))
         {
             m_spriteAnimIndex = 4;
-
-            if (m_spriteAnimIndex != 4)
-                m_animTime = 0.0f;
         }
         else if (Input.GetAxisRaw("Vertical") < -0.9f)
         {
@@ -142,20 +136,22 @@ public class PlayerController : MonoBehaviour
             m_spriteAnimIndex = 0;
         }
 
-        if (m_prevSpriteAnimIndex != m_spriteAnimIndex && !m_anims[m_spriteAnimIndex].m_StayOnLastFrame)
+        if (m_prevSpriteAnimIndex != m_spriteAnimIndex)
         {
             m_animTime = 0.0f;
-
-            if (m_spriteAnimIndex == 5)
-            {
-                m_spriteAnimIndex = 0;
-            }
         }
 
         m_animTime += Time.deltaTime;
 
-        if (m_animTime > m_anims[m_spriteAnimIndex].m_totalTime)
+        if (m_animTime > m_anims[m_spriteAnimIndex].m_totalTime && !m_anims[m_spriteAnimIndex].m_StayOnLastFrame)
+        {
+            if (m_spriteAnimIndex == 5)
+            {
+                m_spriteAnimIndex = 0;
+            }
+
             m_animTime = 0.0f;
+        }
 
         for (int z = 0; z < m_anims[m_spriteAnimIndex].m_fields.Length; z++)
         {
