@@ -27,6 +27,9 @@ struct SpriteAnim
 
     [HideInInspector, SerializeField]
     public float m_totalTime;
+
+    [SerializeField]
+    public bool m_StayOnLastFrame;
 }
 
 public class PlayerController : MonoBehaviour
@@ -78,20 +81,25 @@ public class PlayerController : MonoBehaviour
     {
         float targateSpeed = Input.GetAxisRaw("Horizontal") * m_maxSpeed;
 
+        if (Input.GetAxisRaw("Vertical") < -0.9f)
+        {
+            targateSpeed = 0.0f;
+        }
+
         m_currentSpeed = m_rigb.velocity;
 
         if (targateSpeed > m_currentSpeed.x)
         {
             m_currentSpeed.x += m_acceleration * Time.deltaTime;
 
-            if (Input.GetAxisRaw("Horizontal") == 0.0f)
+            if (targateSpeed == 0.0f)
                 m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, -m_maxSpeed, 0.0f);
         }
         else if (targateSpeed < m_currentSpeed.x)
         {
             m_currentSpeed.x -= m_acceleration * Time.deltaTime;
 
-            if (Input.GetAxisRaw("Horizontal") == 0.0f)
+            if (targateSpeed == 0.0f)
                 m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, 0.0f, m_maxSpeed);
         }
 
@@ -107,7 +115,25 @@ public class PlayerController : MonoBehaviour
 
     void UpdateAnims(float targateSpeed)
     {
-        if ((m_currentSpeed.x > 0.0f && targateSpeed < 0.0f) || (m_currentSpeed.x < 0.0f && targateSpeed > 0.0f))
+        if (Input.GetAxisRaw("Vertical") < 0.9f && m_spriteAnimIndex == 4)
+        {
+            m_spriteAnimIndex = 5;
+
+            if (m_spriteAnimIndex != 5)
+                m_animTime = 0.0f;
+        }
+        if (Input.GetAxisRaw("Vertical") > 0.9f && (targateSpeed > m_maxSpeed * 0.5f || targateSpeed < -m_maxSpeed * 0.5f))
+        {
+            m_spriteAnimIndex = 4;
+
+            if (m_spriteAnimIndex != 4)
+                m_animTime = 0.0f;
+        }
+        else if (Input.GetAxisRaw("Vertical") < -0.9f)
+        {
+            m_spriteAnimIndex = 2;
+        }
+        else if ((m_currentSpeed.x > 0.0f && targateSpeed < 0.0f) || (m_currentSpeed.x < 0.0f && targateSpeed > 0.0f))
         {
             m_spriteAnimIndex = 1;
         }
@@ -116,9 +142,14 @@ public class PlayerController : MonoBehaviour
             m_spriteAnimIndex = 0;
         }
 
-        if (m_prevSpriteAnimIndex != m_spriteAnimIndex)
+        if (m_prevSpriteAnimIndex != m_spriteAnimIndex && !m_anims[m_spriteAnimIndex].m_StayOnLastFrame)
         {
             m_animTime = 0.0f;
+
+            if (m_spriteAnimIndex == 5)
+            {
+                m_spriteAnimIndex = 0;
+            }
         }
 
         m_animTime += Time.deltaTime;
