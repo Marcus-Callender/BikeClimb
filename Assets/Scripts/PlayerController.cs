@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour
         {
             m_spriteAnimIndex = 5;
         }
-        else if (Input.GetAxisRaw("Vertical") > 0.9f && (targateSpeed > m_maxSpeed * 0.5f || targateSpeed < -m_maxSpeed * 0.5f))
+        else if (Input.GetAxisRaw("Vertical") > 0.9f && (targateSpeed > m_maxSpeed * 0.75f || targateSpeed < -m_maxSpeed * 0.75f))
         {
             m_spriteAnimIndex = 4;
         }
