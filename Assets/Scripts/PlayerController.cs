@@ -2,6 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum E_BIKE_STATE
+{
+    IDLE,
+    SKID,
+    CROUCH,
+    JUMPING,
+    WHEELE_UP,
+    WHEELE_DOWN,
+    LEAPING,
+    WALL_RIDING
+}
+
 [System.Serializable]
 struct SpriteField
 {
@@ -55,6 +67,24 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float m_maxSpeed;
 
+    [SerializeField]
+    private float m_hopVelocity = 5.0f;
+
+    [SerializeField]
+    private float m_leapVelocity = 7.5f;
+
+    [SerializeField]
+    private DetectCollision m_colliderRight;
+
+    [SerializeField]
+    private DetectCollision m_colliderLeft;
+
+    [SerializeField]
+    private DetectCollision m_colliderTop;
+
+    [SerializeField]
+    private DetectCollision m_colliderBottom;
+
     private Vector3 m_currentSpeed;
     private float m_animTime = 0.0f;
     private int m_prevSpriteAnimIndex = 0;
@@ -79,28 +109,54 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        float targateSpeed = Input.GetAxisRaw("Horizontal") * m_maxSpeed;
-
-        if (Input.GetAxisRaw("Vertical") < -0.9f)
-        {
-            targateSpeed = 0.0f;
-        }
-
         m_currentSpeed = m_rigb.velocity;
 
-        if (targateSpeed > m_currentSpeed.x)
-        {
-            m_currentSpeed.x += m_acceleration * Time.deltaTime;
+        float targateSpeed = Input.GetAxisRaw("Horizontal") * m_maxSpeed;
 
-            if (targateSpeed == 0.0f)
-                m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, -m_maxSpeed, 0.0f);
+        if (m_spriteAnimIndex == (int)E_BIKE_STATE.WALL_RIDING)
+        {
+
         }
-        else if (targateSpeed < m_currentSpeed.x)
+        else
         {
-            m_currentSpeed.x -= m_acceleration * Time.deltaTime;
+            if (Input.GetAxisRaw("Vertical") < -0.9f)
+            {
+                targateSpeed = 0.0f;
+            }
 
-            if (targateSpeed == 0.0f)
-                m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, 0.0f, m_maxSpeed);
+            if (Input.GetButtonDown("Jump"))
+            {
+                if (IsWheeleing())
+                {
+                    m_spriteAnimIndex = (int)E_BIKE_STATE.LEAPING;
+                    m_currentSpeed.y = m_leapVelocity;
+                }
+                else
+                {
+                    m_currentSpeed.y = m_hopVelocity;
+                }
+            }
+
+            if (Dir(targateSpeed) != 0.0f)
+            {
+                m_currentSpeed.x += m_acceleration * Dir(targateSpeed) * Time.deltaTime;
+            }
+
+            if (Dir(targateSpeed) != Dir(m_currentSpeed.x) && Dir(m_currentSpeed.x) != 0.0f)
+            {
+                float oldDir = Dir(m_currentSpeed.x);
+
+                m_currentSpeed.x += m_deceleration * -Dir(m_currentSpeed.x) * Time.deltaTime;
+
+                if (oldDir > 0.0f)
+                {
+                    m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, 0.0f, m_maxSpeed);
+                }
+                else
+                {
+                    m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, -m_maxSpeed, 0.0f);
+                }
+            }
         }
 
         m_currentSpeed.x = Mathf.Clamp(m_currentSpeed.x, -m_maxSpeed, m_maxSpeed);
@@ -115,25 +171,32 @@ public class PlayerController : MonoBehaviour
 
     void UpdateAnims(float targateSpeed)
     {
-        if (Input.GetAxisRaw("Vertical") < 0.9f && (m_spriteAnimIndex == 4 || m_spriteAnimIndex == 5))
+        if (m_spriteAnimIndex == (int)E_BIKE_STATE.LEAPING)
         {
-            m_spriteAnimIndex = 5;
+            if (m_colliderRight.m_collisionDetected || m_colliderLeft.m_collisionDetected || m_colliderBottom.m_collisionDetected)
+            {
+                m_spriteAnimIndex = (int)E_BIKE_STATE.IDLE;
+            }
         }
-        else if (Input.GetAxisRaw("Vertical") > 0.9f && (targateSpeed > m_maxSpeed * 0.75f || targateSpeed < -m_maxSpeed * 0.75f))
+        else if (Input.GetAxisRaw("Vertical") < 0.9f && (m_spriteAnimIndex == (int)E_BIKE_STATE.WHEELE_UP || m_spriteAnimIndex == (int)E_BIKE_STATE.WHEELE_DOWN))
         {
-            m_spriteAnimIndex = 4;
+            m_spriteAnimIndex = (int)E_BIKE_STATE.WHEELE_DOWN;
+        }
+        else if (Input.GetAxisRaw("Vertical") > 0.9f && (m_currentSpeed.x > m_maxSpeed * 0.75f || m_currentSpeed.x < -m_maxSpeed * 0.75f))
+        {
+            m_spriteAnimIndex = (int)E_BIKE_STATE.WHEELE_UP;
         }
         else if (Input.GetAxisRaw("Vertical") < -0.9f)
         {
-            m_spriteAnimIndex = 2;
+            m_spriteAnimIndex = (int)E_BIKE_STATE.CROUCH;
         }
         else if ((m_currentSpeed.x > 0.0f && targateSpeed < 0.0f) || (m_currentSpeed.x < 0.0f && targateSpeed > 0.0f))
         {
-            m_spriteAnimIndex = 1;
+            m_spriteAnimIndex = (int)E_BIKE_STATE.SKID;
         }
         else
         {
-            m_spriteAnimIndex = 0;
+            m_spriteAnimIndex = (int)E_BIKE_STATE.IDLE;
         }
 
         if (m_prevSpriteAnimIndex != m_spriteAnimIndex)
@@ -145,9 +208,9 @@ public class PlayerController : MonoBehaviour
 
         if (m_animTime > m_anims[m_spriteAnimIndex].m_totalTime && !m_anims[m_spriteAnimIndex].m_StayOnLastFrame)
         {
-            if (m_spriteAnimIndex == 5)
+            if (m_spriteAnimIndex == (int)E_BIKE_STATE.WHEELE_DOWN)
             {
-                m_spriteAnimIndex = 0;
+                m_spriteAnimIndex = (int)E_BIKE_STATE.IDLE;
             }
 
             m_animTime = 0.0f;
@@ -163,5 +226,15 @@ public class PlayerController : MonoBehaviour
         }
 
         m_prevSpriteAnimIndex = m_spriteAnimIndex;
+    }
+
+    private bool IsWheeleing()
+    {
+        return m_spriteAnimIndex == (int)E_BIKE_STATE.WHEELE_UP && m_animTime > m_anims[(int)E_BIKE_STATE.WHEELE_UP].m_totalTime;
+    }
+
+    private float Dir(float z)
+    {
+        return z > 0.0f ? 1.0f : (z < 0.0f ? -1.0f : 0.0f);
     }
 }
