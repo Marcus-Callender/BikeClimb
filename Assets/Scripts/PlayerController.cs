@@ -65,6 +65,9 @@ public class PlayerController : MonoBehaviour
     private float m_deceleration;
 
     [SerializeField]
+    private float m_wallAcceleration;
+
+    [SerializeField]
     private float m_maxSpeed;
 
     [SerializeField]
@@ -113,9 +116,28 @@ public class PlayerController : MonoBehaviour
 
         float targateSpeed = Input.GetAxisRaw("Horizontal") * m_maxSpeed;
 
+        if ((m_colliderLeft.enter || m_colliderRight.enter) && (!m_colliderTop.stay && !m_colliderBottom.stay))
+        {
+            Debug.Log("Entered state wall riding.");
+            m_spriteAnimIndex = (int)E_BIKE_STATE.WALL_RIDING;
+        }
+
         if (m_spriteAnimIndex == (int)E_BIKE_STATE.WALL_RIDING)
         {
+            Debug.Log("In state wall riding.");
 
+            if (!m_colliderLeft.stay && !m_colliderRight.stay)
+            {
+                m_spriteAnimIndex = (int)E_BIKE_STATE.IDLE;
+            }
+
+            m_currentSpeed.y += m_wallAcceleration * Time.deltaTime;
+            //m_currentSpeed.y = m_acceleration * Time.deltaTime;
+
+            if (Input.GetButtonDown("Jump"))
+            {
+                m_currentSpeed = new Vector3(m_colliderLeft.stay ? m_acceleration : -m_acceleration, m_leapVelocity);
+            }
         }
         else
         {
@@ -171,9 +193,13 @@ public class PlayerController : MonoBehaviour
 
     void UpdateAnims(float targateSpeed)
     {
-        if (m_spriteAnimIndex == (int)E_BIKE_STATE.LEAPING)
+        if (m_spriteAnimIndex == (int)E_BIKE_STATE.WALL_RIDING)
         {
-            if (m_colliderRight.m_collisionDetected || m_colliderLeft.m_collisionDetected || m_colliderBottom.m_collisionDetected)
+
+        }
+        else if (m_spriteAnimIndex == (int)E_BIKE_STATE.LEAPING)
+        {
+            if (m_colliderRight.enter || m_colliderLeft.enter || m_colliderBottom.enter)
             {
                 m_spriteAnimIndex = (int)E_BIKE_STATE.IDLE;
             }

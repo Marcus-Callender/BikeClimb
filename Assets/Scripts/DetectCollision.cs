@@ -4,21 +4,26 @@ using UnityEngine;
 
 public class DetectCollision : MonoBehaviour
 {
-    public bool m_collisionDetected = false;
-    
-    //private void FixedUpdate()
+    public bool enter = false;
+    public bool stay = false;
+
     private void LateUpdate()
     {
-        m_collisionDetected = false;
+        enter = false;
     }
-    
-    /*private void OnTriggerStay(Collider other)
+
+    private void FixedUpdate()
     {
-        m_collisionDetected = true;
-    }*/
+        stay = false;
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        stay = true;
+    }
 
     private void OnTriggerEnter(Collider other)
     {
-        m_collisionDetected = true;
+        enter = true;
     }
 }
