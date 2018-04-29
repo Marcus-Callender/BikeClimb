@@ -92,8 +92,12 @@ public class PlayerController : MonoBehaviour
     private float m_animTime = 0.0f;
     private int m_prevSpriteAnimIndex = 0;
 
+    private Vector3 m_previousPos;
+
     void Start()
     {
+        m_previousPos = transform.position;
+
         m_currentSpeed = Vector3.zero;
 
         for (int z = 0; z < m_anims.Length; z++)
@@ -118,17 +122,16 @@ public class PlayerController : MonoBehaviour
 
         if ((m_colliderLeft.enter || m_colliderRight.enter) && (!m_colliderTop.stay && !m_colliderBottom.stay))
         {
-            Debug.Log("Entered state wall riding.");
             m_spriteAnimIndex = (int)E_BIKE_STATE.WALL_RIDING;
+            m_rigb.useGravity = false;
         }
 
         if (m_spriteAnimIndex == (int)E_BIKE_STATE.WALL_RIDING)
         {
-            Debug.Log("In state wall riding.");
-
             if (!m_colliderLeft.stay && !m_colliderRight.stay)
             {
-                m_spriteAnimIndex = (int)E_BIKE_STATE.IDLE;
+                m_spriteAnimIndex = (int)E_BIKE_STATE.LEAPING;
+                m_rigb.useGravity = true;
             }
 
             m_currentSpeed.y += m_wallAcceleration * Time.deltaTime;
@@ -137,6 +140,13 @@ public class PlayerController : MonoBehaviour
             if (Input.GetButtonDown("Jump"))
             {
                 m_currentSpeed = new Vector3(m_colliderLeft.stay ? m_acceleration : -m_acceleration, m_leapVelocity);
+            }
+
+            if (Mathf.Abs((transform.position - m_previousPos).magnitude) < 0.01f)
+            {
+                Vector3 tmp = transform.position;
+                tmp.x += m_colliderLeft.stay ? 0.001f : -0.001f;
+                transform.position = tmp;
             }
         }
         else
@@ -185,8 +195,10 @@ public class PlayerController : MonoBehaviour
 
         m_rigb.velocity = m_currentSpeed;
 
-        if (m_currentSpeed.x != 0.0f)
+        if ((m_currentSpeed.x != 0.0f) && (m_spriteAnimIndex != (int)E_BIKE_STATE.WALL_RIDING))
             m_spriteRend.flipX = m_currentSpeed.x < 0.0f;
+
+        m_previousPos = transform.position;
 
         UpdateAnims(targateSpeed);
     }
